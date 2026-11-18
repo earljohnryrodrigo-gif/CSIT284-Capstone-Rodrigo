@@ -8,18 +8,35 @@ List<ClassSession> buildSeedSessions() {
 
   return [
     ClassSession(
+      id: 'SES-DEMO-OLDER',
+      title: 'Lecture - Nov 16',
+      createdAt: now.subtract(const Duration(days: 2)),
+      isOpen: false,
+      records: _recordsFor(
+        ['24-3982-160', '24-3982-161', '24-3982-162', '24-3761-043'],
+        now.subtract(const Duration(days: 2, hours: 1)),
+      ),
+    ),
+    ClassSession(
       id: 'SES-DEMO-CLOSED',
-      title: 'Previous Lecture - Nov 17',
+      title: 'Lecture - Nov 17',
       createdAt: now.subtract(const Duration(days: 1)),
       isOpen: false,
       records: _recordsFor(
-        ['2024-001', '2024-002', '2024-003', '2024-004'],
+        [
+          '24-3982-160',
+          '24-4120-208',
+          '24-3654-117',
+          '24-4011-092',
+          '24-3893-275',
+          '24-4256-131',
+        ],
         now.subtract(const Duration(days: 1, hours: 1)),
       ),
     ),
     ClassSession(
       id: 'SES-DEMO-OPEN',
-      title: 'Current Lecture - Demo',
+      title: 'Lecture - Today (Demo)',
       createdAt: now,
       isOpen: true,
     ),

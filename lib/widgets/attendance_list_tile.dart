@@ -18,18 +18,18 @@ class AttendanceListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final attendance = record;
     final isPresent = attendance != null;
+    final statusColor =
+        isPresent ? AppTheme.presentColor : AppTheme.absentColor;
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: isPresent
-            ? AppTheme.presentColor.withValues(alpha: 0.15)
-            : colorScheme.surfaceContainerHighest,
+        backgroundColor: statusColor.withValues(alpha: 0.15),
         child: Icon(
           isPresent ? Icons.check : Icons.close,
-          color: isPresent ? AppTheme.presentColor : AppTheme.absentColor,
+          color: statusColor,
         ),
       ),
       title: Text(studentName),
@@ -38,18 +38,26 @@ class AttendanceListTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Text(
-            isPresent ? 'Present' : 'Absent',
-            style: TextStyle(
-              color: isPresent ? AppTheme.presentColor : AppTheme.absentColor,
-              fontWeight: FontWeight.w600,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              isPresent ? 'PRESENT' : 'ABSENT',
+              style: TextStyle(
+                color: statusColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
             ),
           ),
-          if (attendance != null)
-            Text(
-              formatTime(attendance.timestamp),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+          const SizedBox(height: 4),
+          Text(
+            attendance == null ? '--' : formatTime(attendance.timestamp),
+            style: textTheme.bodySmall,
+          ),
         ],
       ),
     );

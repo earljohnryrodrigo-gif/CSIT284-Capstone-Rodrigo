@@ -6,8 +6,10 @@ import '../models/attendance_record.dart';
 import '../models/check_in_result.dart';
 import '../models/class_session.dart';
 import '../models/student.dart';
+import '../utils/app_constants.dart';
 import '../utils/formatters.dart';
 import '../utils/qr_payload.dart';
+import '../utils/student_id_validator.dart';
 import 'attendance_service.dart';
 
 class DummyAttendanceService implements AttendanceService {
@@ -40,6 +42,15 @@ class DummyAttendanceService implements AttendanceService {
     return null;
   }
 
+  void _closeAllOpenExcept(String? keepId) {
+    for (var i = 0; i < _sessions.length; i++) {
+      final session = _sessions[i];
+      if (session.isOpen && session.id != keepId) {
+        _sessions[i] = session.copyWith(isOpen: false);
+      }
+    }
+  }
+
   @override
   Future<List<Student>> getRoster() async {
     await _delay();
@@ -49,7 +60,9 @@ class DummyAttendanceService implements AttendanceService {
   @override
   Future<Student?> findStudent(String studentId) async {
     await _delay();
-    return _studentById(studentId.trim());
+    final id = studentId.trim();
+    if (!StudentIdValidator.isValid(id)) return null;
+    return _studentById(id);
   }
 
   @override
@@ -69,6 +82,8 @@ class DummyAttendanceService implements AttendanceService {
     await _delay();
 
     final trimmed = title.trim();
+    _closeAllOpenExcept(null);
+
     final session = ClassSession(
       id: 'SES-${DateTime.now().millisecondsSinceEpoch}',
       title: trimmed.isEmpty ? 'Class Session' : trimmed,
@@ -87,7 +102,20 @@ class DummyAttendanceService implements AttendanceService {
     final index = _indexOf(sessionId);
     if (index == -1) return;
 
+    if (isOpen) _closeAllOpenExcept(sessionId);
+
     _sessions[index] = _sessions[index].copyWith(isOpen: isOpen);
+    _emit();
+  }
+
+  @override
+  Future<void> deleteSession(String sessionId) async {
+    await _delay();
+
+    final index = _indexOf(sessionId);
+    if (index == -1) return;
+
+    _sessions.removeAt(index);
     _emit();
   }
 
@@ -99,6 +127,15 @@ class DummyAttendanceService implements AttendanceService {
     await _delay();
 
     final id = studentId.trim();
+    if (!StudentIdValidator.isValid(id)) {
+      return CheckInResult(
+        status: CheckInStatus.invalidStudentId,
+        title: 'Invalid Student ID',
+        message: 'Student IDs use the format $kStudentIdHint. '
+            'Please check and try again.',
+      );
+    }
+
     final student = _studentById(id);
     if (student == null) {
       return CheckInResult(

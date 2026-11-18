@@ -15,6 +15,8 @@ abstract class AttendanceService {
 
   Future<void> setSessionOpen(String sessionId, bool isOpen);
 
+  Future<void> deleteSession(String sessionId);
+
   Future<CheckInResult> checkIn({
     required String rawQrValue,
     required String studentId,

@@ -6,7 +6,7 @@ class AppTheme {
   static const Color seedColor = Color(0xFF3949AB);
 
   static const Color presentColor = Color(0xFF2E7D32);
-  static const Color absentColor = Color(0xFF757575);
+  static const Color absentColor = Color(0xFFC62828);
 
   static ThemeData light() {
     final colorScheme = ColorScheme.fromSeed(
