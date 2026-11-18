@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
-import '../models/attendance_models.dart';
+import '../models/attendance_record.dart';
+import '../theme/app_theme.dart';
+import '../utils/formatters.dart';
 
 class AttendanceListTile extends StatelessWidget {
   final String studentId;
@@ -17,28 +18,39 @@ class AttendanceListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPresent = record != null;
-    final timeText = record != null
-        ? '${twoDigits(record!.scannedAt.hour)}:${twoDigits(record!.scannedAt.minute)}'
-        : '';
+    final colorScheme = Theme.of(context).colorScheme;
+    final attendance = record;
+    final isPresent = attendance != null;
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor:
-            isPresent ? Colors.green.shade100 : Colors.grey.shade200,
+        backgroundColor: isPresent
+            ? AppTheme.presentColor.withValues(alpha: 0.15)
+            : colorScheme.surfaceContainerHighest,
         child: Icon(
           isPresent ? Icons.check : Icons.close,
-          color: isPresent ? Colors.green.shade800 : Colors.grey,
+          color: isPresent ? AppTheme.presentColor : AppTheme.absentColor,
         ),
       ),
       title: Text(studentName),
       subtitle: Text(studentId),
-      trailing: Text(
-        isPresent ? 'Present ($timeText)' : 'Absent',
-        style: TextStyle(
-          
-          color: isPresent ? Colors.green.shade700 : Colors.grey,
-        ),
+      trailing: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            isPresent ? 'Present' : 'Absent',
+            style: TextStyle(
+              color: isPresent ? AppTheme.presentColor : AppTheme.absentColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (attendance != null)
+            Text(
+              formatTime(attendance.timestamp),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+        ],
       ),
     );
   }

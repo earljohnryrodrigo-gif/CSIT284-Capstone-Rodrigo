@@ -13,7 +13,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     formats: const [BarcodeFormat.qrCode],
     detectionSpeed: DetectionSpeed.noDuplicates,
   );
-  bool _hasPopped = false;
+
+  bool _handled = false;
 
   @override
   void dispose() {
@@ -22,13 +23,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   void _onDetect(BarcodeCapture capture) {
-    if (_hasPopped) return;
+    if (_handled) return;
+
     for (final barcode in capture.barcodes) {
-      final code = barcode.rawValue;
-      if (code != null && code.isNotEmpty) {
-        _hasPopped = true;
-        Navigator.pop(context, code);
-        break;
+      final value = barcode.rawValue?.trim();
+      if (value != null && value.isNotEmpty) {
+        _handled = true;
+        Navigator.pop(context, value);
+        return;
       }
     }
   }
@@ -40,8 +42,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         title: const Text('Scan Session QR'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.flash_on),
             tooltip: 'Toggle Flashlight',
+            icon: const Icon(Icons.flash_on),
             onPressed: () => _controller.toggleTorch(),
           ),
         ],
@@ -62,14 +64,20 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
               ),
             ),
           ),
-          const Align(
+          Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
               child: Card(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: Text('Point camera at the teacher\'s QR code'),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  child: Text(
+                    "Point your camera at the teacher's QR code",
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ),
               ),
             ),

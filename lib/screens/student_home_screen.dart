@@ -1,26 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../data/dummy_store.dart';
-import '../widgets/student_id_card.dart';
+import '../models/check_in_result.dart';
+import '../models/student.dart';
+import '../services/attendance_service.dart';
+import '../utils/app_constants.dart';
+import '../widgets/status_banner.dart';
+import '../widgets/student_id_field.dart';
 import 'qr_scanner_screen.dart';
-import 'teacher_screen.dart';
+import 'teacher_login_screen.dart';
 
 class StudentHomeScreen extends StatefulWidget {
-  const StudentHomeScreen({super.key});
+  final AttendanceService service;
+
+  const StudentHomeScreen({super.key, required this.service});
 
   @override
   State<StudentHomeScreen> createState() => _StudentHomeScreenState();
 }
 
 class _StudentHomeScreenState extends State<StudentHomeScreen> {
+  static const String _savedIdKey = 'student_id';
+
   final TextEditingController _idController = TextEditingController();
-  String? _lastStatusMessage;
+  Student? _student;
+  CheckInResult? _result;
+  bool _isLookingUp = false;
+  bool _isChecking = false;
+  int _lookupToken = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadSavedStudentId();
+    _loadSavedId();
   }
 
   @override
@@ -29,210 +41,168 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     super.dispose();
   }
 
-  Future<void> _loadSavedStudentId() async {
+  Future<void> _loadSavedId() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedId = prefs.getString('student_id') ?? '';
+    final saved = prefs.getString(_savedIdKey) ?? '';
     if (!mounted) return;
-    setState(() {
-      _idController.text = savedId;
-    });
+    _idController.text = saved;
+    await _lookupStudent(saved);
   }
 
-  Future<void> _saveStudentId(String id) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('student_id', id.trim());
-  }
+  Future<void> _lookupStudent(String rawId) async {
+    final token = ++_lookupToken;
+    final id = rawId.trim();
 
-  Future<void> _openScanner({bool simulate = false}) async {
-    final studentId = _idController.text.trim();
-    final studentName = kStudentRoster[studentId];
-
-    if (studentName == null) {
-      _showResultDialog(
-        title: 'Invalid Student ID',
-        message:
-            'Please enter a valid Student ID from $kClassName (e.g., 2024-002).',
-        isError: true,
-      );
+    if (id.isEmpty) {
+      setState(() {
+        _student = null;
+        _isLookingUp = false;
+      });
       return;
     }
 
-    await _saveStudentId(studentId);
-    if (!mounted) return;
+    setState(() => _isLookingUp = true);
+    final student = await widget.service.findStudent(id);
 
-    String? scannedCode;
-    if (simulate) {
-      scannedCode = dummyStore.sessions.isNotEmpty
-          ? dummyStore.sessions.first.id
-          : null;
-    } else {
-      scannedCode = await Navigator.push<String>(
-        context,
-        MaterialPageRoute(builder: (_) => const QrScannerScreen()),
-      );
-    }
+    if (!mounted || token != _lookupToken) return;
+    setState(() {
+      _student = student;
+      _isLookingUp = false;
+    });
+  }
 
-    if (scannedCode == null || scannedCode.trim().isEmpty) return;
+  Future<void> _scanAndCheckIn() async {
+    final id = _idController.text.trim();
 
-    final result = dummyStore.markAttendance(
-      sessionId: scannedCode.trim(),
-      studentId: studentId,
-      studentName: studentName,
-    );
-
-    if (!result.isError) {
+    if (_student == null) {
       setState(() {
-        _lastStatusMessage = result.message.replaceAll('\n', ' - ');
+        _result = const CheckInResult(
+          status: CheckInStatus.invalidStudentId,
+          title: 'Student ID Not Found',
+          message:
+              'Enter a valid Student ID from the class roster before scanning.',
+        );
       });
+      return;
     }
 
-    if (!mounted) return;
-    _showResultDialog(
-      title: result.title,
-      message: result.message,
-      isError: result.isError,
-    );
-  }
-
-  void _showResultDialog({
-    required String title,
-    required String message,
-    required bool isError,
-  }) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        icon: Icon(
-          isError ? Icons.error_outline : Icons.check_circle_outline,
-          color: isError ? Theme.of(ctx).colorScheme.error : Colors.green,
-          size: 40,
-        ),
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _promptTeacherPin() async {
-    final pinController = TextEditingController();
-    final granted = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Teacher Mode'),
-        content: TextField(
-          controller: pinController,
-          keyboardType: TextInputType.number,
-          obscureText: true,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Enter Teacher PIN',
-            hintText: 'Default: 1234',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx, pinController.text.trim() == kTeacherPin);
-            },
-            child: const Text('Enter'),
-          ),
-        ],
-      ),
+    final scannedValue = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
     );
 
-    pinController.dispose();
+    if (!mounted || scannedValue == null) return;
+
+    setState(() => _isChecking = true);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_savedIdKey, id);
+
+    final result = await widget.service.checkIn(
+      rawQrValue: scannedValue,
+      studentId: id,
+    );
 
     if (!mounted) return;
-    if (granted == true) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const TeacherScreen()),
-      );
-    } else if (granted == false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Incorrect PIN')),
-      );
-    }
+    setState(() {
+      _result = result;
+      _isChecking = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final matchedName = kStudentRoster[_idController.text.trim()];
+    final theme = Theme.of(context);
+    final student = _student;
+    final result = _result;
 
     return Scaffold(
       appBar: AppBar(
-        title: GestureDetector(
-          onLongPress: _promptTeacherPin,
-          child: const Text('Attendance Checker'),
-        ),
+        title: const Text(kAppName),
         actions: [
           IconButton(
-            tooltip: 'Teacher Mode (PIN: $kTeacherPin)',
+            tooltip: 'Teacher Mode',
             icon: const Icon(Icons.admin_panel_settings_outlined),
-            onPressed: _promptTeacherPin,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => TeacherLoginScreen(service: widget.service),
+              ),
+            ),
           ),
         ],
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            StudentIdCard(
-              controller: _idController,
-              matchedName: matchedName,
-              onChanged: () => setState(() {}),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => _openScanner(simulate: false),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 18),
+        children: [
+          Card(
+            elevation: 0,
+            color: theme.colorScheme.primaryContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    kClassName,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Enter your Student ID, then scan the QR code shown by your teacher.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
               ),
-              icon: const Icon(Icons.qr_code_scanner, size: 28),
-              label: const Text(
-                'Scan Class QR',
-                style: TextStyle(fontSize: 18),
-              ),
             ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: () => _openScanner(simulate: true),
-              icon: const Icon(Icons.bug_report_outlined),
-              label: const Text('Demo: Simulate QR Scan'),
-            ),
-            if (_lastStatusMessage != null) ...[
-              const SizedBox(height: 16),
-              Card(
-                color: colorScheme.secondaryContainer,
-                child: ListTile(
-                  leading: const Icon(Icons.check_circle, color: Colors.green),
-                  title: Text(_lastStatusMessage!),
+          ),
+          const SizedBox(height: 20),
+          StudentIdField(
+            controller: _idController,
+            onChanged: _lookupStudent,
+            isValid: student != null,
+          ),
+          if (_isLookingUp) ...[
+            const SizedBox(height: 8),
+            const LinearProgressIndicator(),
+          ],
+          if (student != null && !_isLookingUp)
+            Padding(
+              padding: const EdgeInsets.only(top: 12, left: 4),
+              child: Text(
+                'Welcome, ${student.fullName}',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-            const Spacer(),
-            Text(
-              'Dummy Data Mode (No Firebase yet).\nTap top-right icon for Teacher Mode (PIN: $kTeacherPin).',
-              //textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.outline,
-                  ),
+            ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: _isChecking ? null : _scanAndCheckIn,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+            ),
+            icon: const Icon(Icons.qr_code_scanner),
+            label: Text(
+              _isChecking ? 'Checking in...' : 'Scan Class QR',
+              style: const TextStyle(fontSize: 18),
+            ),
+          ),
+          if (_isChecking) ...[
+            const SizedBox(height: 16),
+            const LinearProgressIndicator(),
+          ],
+          if (result != null && !_isChecking) ...[
+            const SizedBox(height: 20),
+            StatusBanner(
+              title: result.title,
+              message: result.message,
+              isSuccess: result.isSuccess,
             ),
           ],
-        ),
+        ],
       ),
     );
   }
