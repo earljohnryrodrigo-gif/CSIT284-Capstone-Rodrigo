@@ -1,6 +1,56 @@
-import 'package:flutter/foundation.dart';
+class ChangeNotifier {
+  final Set<void Function()> _listeners = <void Function()>{};
 
-import '../models/attendance_models.dart';
+  void addListener(void Function() listener) => _listeners.add(listener);
+
+  void removeListener(void Function() listener) => _listeners.remove(listener);
+
+  void notifyListeners() {
+    for (final listener in _listeners.toList()) {
+      listener();
+    }
+  }
+
+  void dispose() => _listeners.clear();
+}
+
+class AttendanceRecord {
+  final String studentId;
+  final String studentName;
+  final DateTime scannedAt;
+
+  const AttendanceRecord({
+    required this.studentId,
+    required this.studentName,
+    required this.scannedAt,
+  });
+}
+
+class ClassSession {
+  final String id;
+  final String label;
+  bool isActive;
+  final Map<String, AttendanceRecord> records;
+
+  ClassSession({
+    required this.id,
+    required this.label,
+    this.isActive = true,
+    Map<String, AttendanceRecord>? records,
+  }) : records = records ?? <String, AttendanceRecord>{};
+}
+
+class CheckInResult {
+  final String title;
+  final String message;
+  final bool isError;
+
+  const CheckInResult({
+    required this.title,
+    required this.message,
+    required this.isError,
+  });
+}
 
 const String kClassName = 'BSCS 3A - Mobile Development';
 const String kTeacherPin = '1234';

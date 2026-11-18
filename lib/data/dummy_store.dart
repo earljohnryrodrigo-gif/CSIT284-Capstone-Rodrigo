@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import '../models/attendance_models.dart';
+import '../models/attendance_models.dart' hide ChangeNotifier;
 
 const String kClassName = 'BSCS 3A - Mobile Development';
 const String kTeacherPin = '1234';
@@ -21,7 +21,7 @@ const Map<String, String> kStudentRoster = {
 String twoDigits(int n) => n.toString().padLeft(2, '0');
 
 class DummyStore extends ChangeNotifier {
-  final List<ClassSession> sessions = [
+  final sessions = <ClassSession>[
     ClassSession(
       id: 'SES-DEMO-01',
       label: 'Nov 18 - Lecture (Dummy)',
@@ -57,7 +57,7 @@ class DummyStore extends ChangeNotifier {
       isActive: true,
     );
     sessions.insert(0, session);
-    notifyListeners();
+    super.notifyListeners();
     return session;
   }
 
@@ -65,7 +65,7 @@ class DummyStore extends ChangeNotifier {
     final index = sessions.indexWhere((s) => s.id == sessionId);
     if (index != -1) {
       sessions[index].isActive = !sessions[index].isActive;
-      notifyListeners();
+      super.notifyListeners();
     }
   }
 
@@ -107,7 +107,7 @@ class DummyStore extends ChangeNotifier {
       studentName: studentName,
       scannedAt: DateTime.now(),
     );
-    notifyListeners();
+    super.notifyListeners();
 
     return CheckInResult(
       title: 'Present!',

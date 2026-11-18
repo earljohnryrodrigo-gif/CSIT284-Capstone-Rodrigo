@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../data/dummy_store.dart';
-import '../models/attendance_models.dart';
+import '../data/dummy_store.dart' hide kStudentRoster;
+import '../models/attendance_models.dart' hide dummyStore;
 import '../widgets/attendance_list_tile.dart';
 import '../widgets/session_qr_card.dart';
 
@@ -77,9 +77,8 @@ class _TeacherScreenState extends State<TeacherScreen> {
             ],
           ),
         ),
-        body: ListenableBuilder(
-          listenable: dummyStore,
-          builder: (context, child) {
+        body: Builder(
+          builder: (context) {
             final sessions = dummyStore.sessions;
 
             if (sessions.isNotEmpty &&
