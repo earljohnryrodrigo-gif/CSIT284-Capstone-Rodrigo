@@ -17,6 +17,8 @@ class StudentIdCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final firstId = kStudentRoster.keys.first;
+    final lastId = kStudentRoster.keys.last;
 
     return Card(
       child: Padding(
@@ -26,17 +28,19 @@ class StudentIdCard extends StatelessWidget {
           children: [
             Text(
               kClassName,
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: controller,
               onChanged: (_) => onChanged(),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Student ID',
-                hintText: 'e.g. 2024-002',
-                prefixIcon: Icon(Icons.badge_outlined),
-                border: OutlineInputBorder(),
+                hintText: 'e.g. $firstId',
+                prefixIcon: const Icon(Icons.badge_outlined),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 10),
@@ -55,7 +59,7 @@ class StudentIdCard extends StatelessWidget {
                   child: Text(
                     matchedName != null
                         ? 'Student: $matchedName'
-                        : 'Enter ID from roster (2024-001 to 2024-010)',
+                        : 'Enter ID from roster ($firstId to $lastId)',
                     style: TextStyle(
                       color: matchedName != null
                           ? Colors.green.shade700
