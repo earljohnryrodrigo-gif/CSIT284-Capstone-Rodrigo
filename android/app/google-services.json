@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "645026687334",
+    "project_id": "attendance-checker-ej-2026",
+    "storage_bucket": "attendance-checker-ej-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:645026687334:android:47703c1f6fc1f7b4a340a7",
+        "android_client_info": {
+          "package_name": "com.example.capstone_rodrigo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAf8etuWQEKorQoh3IB3u9gjBkIdCzkecs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -84,9 +84,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen>
   }
 
   void _showMessage(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text)),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   Future<void> _createSession() async {
@@ -197,6 +195,18 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen>
             child: StreamBuilder<List<ClassSession>>(
               stream: _sessionsStream,
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'Could not load sessions:\n${snapshot.error}',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                }
+
                 final sessions = snapshot.data;
                 if (sessions == null) {
                   return const Center(child: CircularProgressIndicator());
@@ -304,7 +314,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen>
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: Text('No sessions yet. Create one in the Current Session tab.'),
+          child: Text(
+            'No sessions yet. Create one in the Current Session tab.',
+          ),
         ),
       );
     }
@@ -321,10 +333,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen>
           style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
-        Text(
-          'Session: ${session.title}',
-          style: textTheme.bodyMedium,
-        ),
+        Text('Session: ${session.title}', style: textTheme.bodyMedium),
         Text(
           'Date: ${formatDateTime(session.createdAt)}',
           style: textTheme.bodySmall,
@@ -473,9 +482,7 @@ class _NewSessionDialogState extends State<_NewSessionDialog> {
         autofocus: true,
         decoration: InputDecoration(
           labelText: 'Session Title',
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
       actions: [

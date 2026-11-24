@@ -5,4 +5,4 @@ const String kTeacherPin = '1234';
 
 const String kQrPrefix = 'CSIT284-ATT:';
 
-const String kStudentIdHint = '24-3982-160';
+const String kStudentIdHint = '00-0000-00';
