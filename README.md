@@ -3,7 +3,7 @@
 **CSIT284 Capstone Project**
 
 **Developer:** Earl Johnry Rodrigo
-**Workstation Number:** [W32]
+**Workstation Number:** W32
 
 ## Project Description
 
