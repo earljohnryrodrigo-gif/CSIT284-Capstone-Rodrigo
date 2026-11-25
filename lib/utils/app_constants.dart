@@ -1,5 +1,6 @@
+// cspell:disable
 const String kAppName = 'Attendance Checker';
-const String kClassName = 'CSIT284';
+const String kClassName = 'CSIT-284';
 
 const String kTeacherPin = '1234';
 
